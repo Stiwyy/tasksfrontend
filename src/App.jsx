@@ -37,7 +37,7 @@ function App() {
     };
 
     return (
-        <div className="app">
+        <div>
             {!authData ? (
                 <Login onLogin={handleLogin} />
             ) : (

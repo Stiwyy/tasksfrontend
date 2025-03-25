@@ -86,7 +86,7 @@ export default function Login({ onLogin }) {
     };
 
     return (
-        <div className="auth-form">
+        <div>
             <h2>{isRegistering ? "Registrieren" : "Anmelden"}</h2>
             <form onSubmit={handleSubmit}>
                 <div>
@@ -139,8 +139,8 @@ export default function Login({ onLogin }) {
                         </div>
                     </>
                 )}
-                {errorMessage && <p className="error-message">{errorMessage}</p>}
-                {successMessage && <p className="success-message">{successMessage}</p>}
+                {errorMessage && <p>{errorMessage}</p>}
+                {successMessage && <p>{successMessage}</p>}
                 <button type="submit">{isRegistering ? "Registrieren" : "Anmelden"}</button>
             </form>
             <p>

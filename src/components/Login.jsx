@@ -5,14 +5,29 @@ export default function Login({ onLogin }) {
     const [formData, setFormData] = useState({
         username: "",
         password: "",
-        tasks: ""
+        tasks: [{ description: "", completed: false }]
     });
     const [errorMessage, setErrorMessage] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
+    const handleChange = (e, index) => {
+        const { name, value, type, checked } = e.target;
+        const updatedTasks = [...formData.tasks];
+
+        if (name === "taskDescription") {
+            updatedTasks[index].description = value;
+        } else if (name === "taskCompleted") {
+            updatedTasks[index].completed = checked;
+        }
+
+        setFormData({ ...formData, tasks: updatedTasks });
+    };
+
+    const addTask = () => {
+        setFormData({
+            ...formData,
+            tasks: [...formData.tasks, { description: "", completed: false }]
+        });
     };
 
     const handleSubmit = async (e) => {
@@ -23,9 +38,10 @@ export default function Login({ onLogin }) {
         const payload = {
             username: formData.username,
             password: formData.password,
-            tasks: formData.tasks
-                ? formData.tasks.split(",").map(task => ({ description: task.trim() }))
-                : []
+            tasks: formData.tasks.map(task => ({
+                description: task.description.trim(),
+                completed: task.completed
+            }))
         };
 
         try {
@@ -41,29 +57,26 @@ export default function Login({ onLogin }) {
                 body: JSON.stringify(payload),
             });
 
-            const contentType = response.headers.get("content-type");
-            let data;
-
-            if (contentType && contentType.includes("application/json")) {
-                data = await response.json();
-            } else {
-                data = { message: await response.text() };
-            }
-
             if (!response.ok) {
-                throw new Error(data.message || "Etwas ist schiefgelaufen.");
+                const errMsg = await response.text();
+                throw new Error(errMsg || "Etwas ist schiefgelaufen.");
             }
 
+            const data = await response.json();
             setSuccessMessage(data.message || "Erfolg!");
 
             if (!isRegistering) {
-                onLogin(data.token);
+                onLogin({
+                    token: data.token,
+                    username: formData.username,
+                    password: formData.password
+                });
             } else {
                 setIsRegistering(false);
                 setFormData({
                     username: "",
                     password: "",
-                    tasks: ""
+                    tasks: [{ description: "", completed: false }]
                 });
             }
         } catch (error) {
@@ -83,7 +96,7 @@ export default function Login({ onLogin }) {
                         id="username"
                         name="username"
                         value={formData.username}
-                        onChange={handleChange}
+                        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                         required
                     />
                 </div>
@@ -94,22 +107,37 @@ export default function Login({ onLogin }) {
                         id="password"
                         name="password"
                         value={formData.password}
-                        onChange={handleChange}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         required
                     />
                 </div>
                 {isRegistering && (
-                    <div>
-                        <label htmlFor="tasks">Aufgaben (optional):</label>
-                        <input
-                            type="text"
-                            id="tasks"
-                            name="tasks"
-                            value={formData.tasks}
-                            onChange={handleChange}
-                            placeholder="Aufgaben durch Komma getrennt"
-                        />
-                    </div>
+                    <>
+                        <div>
+                            <label htmlFor="tasks">Aufgaben (optional):</label>
+                            {formData.tasks.map((task, index) => (
+                                <div key={index}>
+                                    <input
+                                        type="text"
+                                        name="taskDescription"
+                                        value={task.description}
+                                        onChange={(e) => handleChange(e, index)}
+                                        placeholder="Aufgabe"
+                                    />
+                                    <label>
+                                        Erledigt:
+                                        <input
+                                            type="checkbox"
+                                            name="taskCompleted"
+                                            checked={task.completed}
+                                            onChange={(e) => handleChange(e, index)}
+                                        />
+                                    </label>
+                                </div>
+                            ))}
+                            <button type="button" onClick={addTask}>Weitere Aufgabe hinzufügen</button>
+                        </div>
+                    </>
                 )}
                 {errorMessage && <p className="error-message">{errorMessage}</p>}
                 {successMessage && <p className="success-message">{successMessage}</p>}
